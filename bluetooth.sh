@@ -34,19 +34,19 @@ toggle_bt_power() {
 }
 
 is_device_connected() {
-	bluetoothctl info $1 | awk -F': ' '/Connected/ {print $2}'
+	bluetoothctl info "$1" | awk -F': ' '/Connected/ {print $2}'
 }
 
 connect_bt_device() {
-	bluetoothctl connect $1
+	bluetoothctl connect "$1"
 }
 
 disconnect_bt_device() {
-	bluetoothctl disconnect $1
+	bluetoothctl disconnect "$1"
 }
 
 forget_bt_device() {
-        bluetoothctl remove $1
+        bluetoothctl remove "$1"
 }
 
 toggle_device_connection() {

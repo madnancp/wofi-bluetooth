@@ -1,4 +1,12 @@
 btmenu
 ======
 
-A minimal Bluetooth controller for Linux using bluetoothctl.
+A minimal Bluetooth menu for Linux with wofi menu support.
+
+
+Requirements
+------------
+
+* wofi
+* libnotify
+* bluez
