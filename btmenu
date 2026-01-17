@@ -46,8 +46,24 @@ submenu_show_paired_devices() {
 }
 
 submenu_scan() {
-	echo "Not Implemented"
+	log_info "submenu_scan() entered"
+
+	scan_devices
+
+	log_info "Scanned Devices: ${!SCANNED_DEVICES[*]}"
+	if [ "${#SCANNED_DEVICES[@]}" -eq 0 ]; then
+		log_info "No Device found in scan."
+		notify-send -i bluetooth "Bluetooth" "No device found in scan."
+		handle_main_menu
+		return
+	fi
+
+	local devices=$(printf "%s\n" "${!SCANNED_DEVICES[@]}")
+	local available_devices=("$devices" "Back")
+
+	SELECTED_SCANNED_DEVICE=$(printf "%s\n" "${available_devices[@]}" | menu "Choose device")
 }
+
 
 submenu_device_actions() {
 	printf "Connect\nForget\nBack" | \
@@ -60,7 +76,7 @@ handle_main_menu() {
 	[[ -z "$main_menu_choice" ]] && return
 
 	case "$main_menu_choice" in
-		Scan) submenu_scan;;
+		Scan) handle_submenu_scan;;
 		"Show Paired Devices") handle_show_paired_devices;;
 		"Turn Off Bluetooth") toggle_bt_power; \
 			notify-send -i bluetooth "Bluetooth" "Powering off...";;
@@ -91,6 +107,35 @@ handle_show_paired_devices() {
 	log_info "Resolved MAC: [$device]"
 
 	[[ -z "$SELECTED_PAIRED_DEVICE" ]] && {
+		log_info "Device lookup failed"
+			return
+		}
+
+	handle_device_actions "$device"
+}
+
+handle_submenu_scan() {
+	log_info "handle_submenu_scan() entered"
+
+
+	submenu_scan
+
+	[[ -z "$SELECTED_SCANNED_DEVICE" ]] && {
+		log_info "No device selected"
+			return
+		}
+
+	if [ "$SELECTED_SCANNED_DEVICE" == "Back" ]; then
+		handle_main_menu
+		return
+	fi
+
+	log_info "Available Scanned Devices: ${!SCANNED_DEVICES[@]}"
+	local device="${SCANNED_DEVICES[$SELECTED_SCANNED_DEVICE]}"
+
+	log_info "Resolved MAC: [$device]"
+
+	[[ -z "$SELECTED_SCANNED_DEVICE" ]] && {
 		log_info "Device lookup failed"
 			return
 		}

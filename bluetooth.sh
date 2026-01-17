@@ -15,6 +15,7 @@
 
 
 declare -A DEVICES # key(name) : value(mac addr)
+declare -A SCANNED_DEVICES
 
 log_info() {
 	echo "[INFO]: $*" >&2
@@ -84,22 +85,32 @@ list_devices() {
 }
 
 scan_devices() {
+	log_info "scan_device() called"
+
 	local scan_output="$(mktemp)"
 	bluetoothctl --timeout 15 scan on > "$scan_output" &
-	scan_pid=$!
-	spinner='|/-\'
-	i=0
+	local scan_pid=$!
 
-	while kill -0 "$scan_pid" 2>/dev/null; do
-		printf "\rScanning... %c" "${spinner:i++%4:1}"
-		sleep 0.2
-	done
+	notify-send -t 15000 -i bluetooth "Bluetooth" "Scanning..."
 
 	wait "$scan_pid"
+
+	sed -i -r \
+		-e 's/\r//g' \
+		-e 's/\x1B\[[0-9;]*[mK]//g' \
+		"$scan_output"
 
 	mapfile -t all_things < "$scan_output"
 	rm "$scan_output"
 
-	echo "Scan completed"
-	echo "Scan Result is $all_things"
+	for line in "${all_things[@]}"; do
+		[[ "$line" =~ ^\[(NEW)\]\ Device ]] || continue
+		local mac=$(awk '{print $3}' <<<"$line")
+		local name=$(cut -d' ' -f4- <<<"$line")
+
+		SCANNED_DEVICES["$name"]=$mac
+		log_info "Scanned device Mapped: [$name] -> [$mac]"
+	done
+
+	log_info "Final Scanned device keys: ${!SCANNED_DEVICES[*]}"
 }
